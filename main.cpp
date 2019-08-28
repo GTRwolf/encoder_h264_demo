@@ -24,19 +24,22 @@ int main(int argc, char **argv) {
             std::cout << "img_src is empty!!!" << std::endl;
             exit(0);
         }
-        cv::cvtColor(img_src, img_dst, CV_BGR2RGB);
-        h264_encoder.ConvertMat2Avframe(img_dst);
+        h264_encoder.ConvertMat2Avframe(img_src, i);
         h264_encoder.EncodeVideo();
         cv::imshow("test_img", img_src);
-        cv::waitKey(3);
+        char key = cv::waitKey(3);
+        if ( key == 27 ) {
+            break;
+        }
+        i++;
     }
+//测试代码
 //    h264_encoder.InitEncoder("test.h264");
 //    h264_encoder.InitAvFrame();
 //    for (int i = 0; i < 200; i++) {
 //       h264_encoder.GenerateTestAvFrame(i);
 //       h264_encoder.EncodeVideo();
 //    }
-    h264_encoder.ReleaseEncoder();
-
-    return 0;
+//    h264_encoder.ReleaseEncoder();
+//    return 0;
 }

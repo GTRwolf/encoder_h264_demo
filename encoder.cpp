@@ -22,7 +22,7 @@ void encoder::H264Encoder::InitEncoder(const char *filename) {
         exit(1);
     }
     /* put sample parameters */
-    codec_context_->bit_rate = 400000;
+    codec_context_->bit_rate = 1000000;
     /* resolution must be a multiple of two */
     codec_context_->width = 640;
     codec_context_->height = 480;
@@ -64,7 +64,7 @@ void encoder::H264Encoder::InitAvFrame() {
         exit(1);
     }
 }
-
+//测试用代码，生成虚拟的图像
 void encoder::H264Encoder::GenerateTestAvFrame(int i) {
     int ret;
     int x;
@@ -91,16 +91,26 @@ void encoder::H264Encoder::GenerateTestAvFrame(int i) {
     av_frame_->pts = i;
 }
 
-void encoder::H264Encoder::ConvertMat2Avframe(cv::Mat img) {
-    cv::cvtColor(img, img, CV_BGR2RGB);
-    avpicture_fill((AVPicture*)av_frame_, img.data, AV_PIX_FMT_RGB24, 640, 480);
+void encoder::H264Encoder::ConvertMat2Avframe(cv::Mat img, int img_sequence) {
+    struct SwsContext *sws_ctx_bgr_yuv = NULL;
+    sws_ctx_bgr_yuv = sws_getContext(codec_context_->width,
+                                     codec_context_->height,
+                                     AV_PIX_FMT_BGR24,
+                                     codec_context_->width,
+                                     codec_context_->height,
+                                     codec_context_->pix_fmt //AV_PIX_FMT_YUV420p
+                                     ,0,0,NULL,NULL);
+    const int kStide[] = { (int)img.step[0] };
+    sws_scale(sws_ctx_bgr_yuv, &img.data, kStide, 0, img.rows, av_frame_->data, av_frame_->linesize);
+    av_frame_->pts = img_sequence;
 }
 
 void encoder::H264Encoder::EncodeVideo() {
-    int ret;
+    int ret = 0;
     /* send the frame to the encoder */
-    if (av_frame_)
+    if (av_frame_) {
         printf("Send frame %3"PRId64"\n", av_frame_->pts);
+    }
     ret = avcodec_send_frame(codec_context_, av_frame_);
     if (ret < 0) {
         fprintf(stderr, "Error sending a frame for encoding\n");

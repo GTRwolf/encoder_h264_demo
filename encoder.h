@@ -21,7 +21,7 @@ namespace encoder {
         void InitEncoder(const char *filename);
         void InitAvFrame();
         void GenerateTestAvFrame(int i);
-        void ConvertMat2Avframe(cv::Mat img);
+        void ConvertMat2Avframe(cv::Mat img, int img_sequence);
         void EncodeVideo();
         void ReleaseEncoder();
     private:
