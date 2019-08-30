@@ -5,6 +5,7 @@
 #ifndef ENCODE_H264_DEMO_ENCODER_H
 #define ENCODE_H264_DEMO_ENCODER_H
 
+#include "udp_sender.h"
 extern "C"
 {
 #include <libavutil/opt.h>
@@ -22,7 +23,7 @@ namespace encoder {
         void InitAvFrame();
         void GenerateTestAvFrame(int i);
         void ConvertMat2Avframe(cv::Mat img, int img_sequence);
-        void EncodeVideo();
+        void EncodeAndSendVideo(int mtu);
         void ReleaseEncoder();
     private:
         AVFrame *av_frame_;
@@ -30,6 +31,7 @@ namespace encoder {
         AVCodecContext *codec_context_= NULL;
         const AVCodec *kAv_Codec_;
         FILE *File_;
+        udpsender::Udp_Sender udp_sender;
     };
 }
 

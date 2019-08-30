@@ -6,7 +6,6 @@ int main(int argc, char **argv) {
     encoder::H264Encoder h264_encoder;
     cv::VideoCapture cap(0);
     cv::Mat img_src;
-    cv::Mat img_dst;
     int i = 0;
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <output file> \n", argv[0]);
@@ -25,7 +24,7 @@ int main(int argc, char **argv) {
             exit(0);
         }
         h264_encoder.ConvertMat2Avframe(img_src, i);
-        h264_encoder.EncodeVideo();
+        h264_encoder.EncodeAndSendVideo(450);
         cv::imshow("test_img", img_src);
         char key = cv::waitKey(3);
         if ( key == 27 ) {

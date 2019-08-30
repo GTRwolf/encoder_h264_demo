@@ -3,10 +3,12 @@
 //
 
 #include "encoder.h"
+//extern AVCodec ff_h264_decoder;
 
 void encoder::H264Encoder::InitEncoder(const char *filename) {
     int ret;
     avcodec_register_all();
+    //avcodec_register(&ff_h264_decoder);
     kAv_Codec_ = avcodec_find_encoder(AV_CODEC_ID_H264);
     if (!kAv_Codec_) {
         fprintf(stderr, "Codec '%s' not found\n", AV_CODEC_ID_H264);
@@ -33,7 +35,9 @@ void encoder::H264Encoder::InitEncoder(const char *filename) {
     codec_context_->max_b_frames = 1;
     codec_context_->pix_fmt = AV_PIX_FMT_YUV420P;
     if (kAv_Codec_->id == AV_CODEC_ID_H264) {
-        av_opt_set(codec_context_->priv_data, "preset", "slow", 0);
+        av_opt_set(codec_context_->priv_data, "preset", "superfast", 0);
+        //设置0延迟，实时编码h264视频
+        av_opt_set(codec_context_->priv_data, "tune", "zerolatency", 0);
     }
     /* open it */
     ret = avcodec_open2(codec_context_, kAv_Codec_, NULL);
@@ -46,6 +50,7 @@ void encoder::H264Encoder::InitEncoder(const char *filename) {
         fprintf(stderr, "Could not open %s\n", filename);
         exit(1);
     }
+    udp_sender.InitUdpSocket(5000, "127.0.0.1", 6000);
 }
 
 void encoder::H264Encoder::InitAvFrame() {
@@ -102,10 +107,10 @@ void encoder::H264Encoder::ConvertMat2Avframe(cv::Mat img, int img_sequence) {
                                      ,0,0,NULL,NULL);
     const int kStide[] = { (int)img.step[0] };
     sws_scale(sws_ctx_bgr_yuv, &img.data, kStide, 0, img.rows, av_frame_->data, av_frame_->linesize);
-    av_frame_->pts = img_sequence;
+    av_frame_->pts = img_sequence; //赋予帧编号
 }
 
-void encoder::H264Encoder::EncodeVideo() {
+void encoder::H264Encoder::EncodeAndSendVideo(int mtu) {
     int ret = 0;
     /* send the frame to the encoder */
     if (av_frame_) {
@@ -125,7 +130,8 @@ void encoder::H264Encoder::EncodeVideo() {
             exit(1);
         }
         printf("Write packet %3"PRId64" (size=%5d)\n", av_packet_->pts, av_packet_->size);
-        fwrite(av_packet_->data, 1, av_packet_->size, File_);
+        udp_sender.SendData(av_packet_->data, av_packet_->size,mtu);
+        //fwrite(av_packet_->data, 1, av_packet_->size, File_);
         av_packet_unref(av_packet_);
     }
 }
@@ -133,7 +139,7 @@ void encoder::H264Encoder::EncodeVideo() {
 void encoder::H264Encoder::ReleaseEncoder() {
     uint8_t end_code[] = { 0, 0, 1, 0xb7 };
     /* flush the encoder */
-    EncodeVideo();
+    EncodeAndSendVideo(0);
     /* add sequence end code to have a real MPEG file */
     fwrite(end_code, 1, sizeof(end_code), File_);
     fclose(File_);
